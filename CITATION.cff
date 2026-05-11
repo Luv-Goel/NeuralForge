@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use NeuralForge, please cite it as below."
+authors:
+  - family-names: Goel
+    given-names: Luv
+title: "NeuralForge: Neural Architecture Search & Model Optimization Framework"
+version: 0.2.0
+date-released: 2024-01-01
+url: "https://github.com/Luv-Goel/NeuralForge"
