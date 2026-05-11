@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "neuralforge"
+dynamic = ["version"]
+description = "Neural Architecture Search & Model Optimization Framework for PyTorch"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+keywords = [
+    "neural-architecture-search",
+    "automl",
+    "pytorch",
+    "deep-learning",
+    "model-optimization",
+    "darts",
+    "evolutionary-search",
+]
+
+authors = [
+    {name = "Luv Goel", email = "luvgoel555@gmail.com"},
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "torch>=1.13",
+    "torchvision>=0.14",
+    "numpy>=1.21",
+    "scipy>=1.7",
+    "tqdm>=4.62",
+    "pyyaml>=6.0",
+    "matplotlib>=3.5",
+    "networkx>=2.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/Luv-Goel/NeuralForge"
+Repository = "https://github.com/Luv-Goel/NeuralForge"
+Documentation = "https://github.com/Luv-Goel/NeuralForge/docs"
+"Bug Tracker" = "https://github.com/Luv-Goel/NeuralForge/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=22.0",
+    "isort>=5.11",
+    "flake8>=5.0",
+    "mypy>=0.990",
+    "pre-commit>=2.20",
+]
+lightning = ["pytorch-lightning>=1.8"]
+surrogate = ["scikit-learn>=1.0", "gpytorch>=1.9"]
+all = [
+    "neuralforge[dev]",
+    "neuralforge[lightning]",
+    "neuralforge[surrogate]",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "neuralforge.version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["neuralforge", "neuralforge.*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+strict = false

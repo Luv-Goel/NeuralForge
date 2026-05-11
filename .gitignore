@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+
+# Distributions
+dist/
+build/
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Environments
+.env
+venv/
+.venv/
+env/
+envs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.pt
+*.pth
+*.onnx
+*.log
+results/
+runs/
+wandb/
+lightning_logs/
+
+# Checkpoints
+checkpoints/
+
+# Data
+data/
+datasets/
+
+# Temporary
+tmp/
+temp/
+*.bak

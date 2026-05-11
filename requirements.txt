@@ -1,0 +1,8 @@
+torch>=1.13
+torchvision>=0.14
+numpy>=1.21
+scipy>=1.7
+tqdm>=4.62
+pyyaml>=6.0
+matplotlib>=3.5
+networkx>=2.8
