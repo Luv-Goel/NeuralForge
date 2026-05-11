@@ -11,9 +11,8 @@ References:
     - DARTS: Differentiable Architecture Search (Liu et al., 2019)
 """
 
-import torch
-import torch.nn as nn
 import numpy as np
+import torch
 
 
 class Cutout:

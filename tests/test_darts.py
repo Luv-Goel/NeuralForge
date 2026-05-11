@@ -3,19 +3,17 @@ Tests for the DARTS search algorithm.
 Uses mocked forward passes to verify structure without GPU.
 """
 
-import pytest
 import torch
-import torch.nn as nn
 
-from neuralforge.core.search_space import CellSearchSpace
-from neuralforge.core.genotypes import Genotype
 from neuralforge.algorithms.darts import (
-    DARTSSearch,
-    DARTSNetwork,
     DARTSCell,
+    DARTSNetwork,
+    DARTSSearch,
     MixedOp,
 )
+from neuralforge.core.genotypes import Genotype
 from neuralforge.core.operations import PRIMITIVES
+from neuralforge.core.search_space import CellSearchSpace
 
 
 class TestMixedOp:
@@ -100,7 +98,11 @@ class TestDARTSNetwork:
     def test_network_arch_parameters(self):
         """arch_parameters should return both alphas."""
         net = DARTSNetwork(
-            c_in=3, init_channels=16, num_classes=10, layers=4, nodes=4,
+            c_in=3,
+            init_channels=16,
+            num_classes=10,
+            layers=4,
+            nodes=4,
         )
         params = net.arch_parameters()
         assert len(params) == 2
@@ -110,7 +112,11 @@ class TestDARTSNetwork:
     def test_network_genotype_shape(self):
         """genotype() should return a valid Genotype with correct edge counts."""
         net = DARTSNetwork(
-            c_in=3, init_channels=16, num_classes=10, layers=4, nodes=4,
+            c_in=3,
+            init_channels=16,
+            num_classes=10,
+            layers=4,
+            nodes=4,
         )
         geno = net.genotype()
         assert isinstance(geno, Genotype)
@@ -121,7 +127,11 @@ class TestDARTSNetwork:
     def test_network_forward_cpu(self):
         """Forward pass should work on CPU without cuda errors."""
         net = DARTSNetwork(
-            c_in=3, init_channels=16, num_classes=10, layers=4, nodes=4,
+            c_in=3,
+            init_channels=16,
+            num_classes=10,
+            layers=4,
+            nodes=4,
         )
         net.eval()
         x = torch.randn(2, 3, 32, 32)

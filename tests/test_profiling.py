@@ -1,10 +1,9 @@
-import pytest
-import torch
 import torch.nn as nn
 
 from neuralforge.utils.profiling import (
-    count_parameters, count_macs, count_flops,
-    estimate_memory, profile_model,
+    count_macs,
+    count_parameters,
+    profile_model,
 )
 
 

@@ -28,15 +28,16 @@ References:
 """
 
 from __future__ import annotations
-import copy
+
 import logging
 import random
 import time
-import heapq
+from dataclasses import dataclass
 from typing import (
-    Optional, List, Tuple, Dict, Any, Callable,
+    Callable,
+    List,
+    Optional,
 )
-from dataclasses import dataclass, field
 
 import numpy as np
 from tqdm import tqdm
@@ -45,14 +46,13 @@ from neuralforge.algorithms.base import (
     SearchAlgorithm,
     SearchConfig,
 )
-from neuralforge.core.search_space import CellSearchSpace
 from neuralforge.core.genotypes import (
     Genotype,
-    random_genotype,
-    mutate_genotype,
     crossover_genotypes,
+    mutate_genotype,
+    random_genotype,
 )
-from neuralforge.core.operations import PRIMITIVES
+from neuralforge.core.search_space import CellSearchSpace
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Individual:
     """A single architecture in the evolutionary population.
-    
+
     Attributes:
         genotype: The architecture definition.
         fitness: Validation accuracy (higher is better).
@@ -68,6 +68,7 @@ class Individual:
         birth_generation: When this individual was created.
         eval_time: Time taken to evaluate (seconds).
     """
+
     genotype: Genotype
     fitness: float = 0.0
     age: int = 0
@@ -100,6 +101,7 @@ class EvolutionConfig(SearchConfig):
         keep_top_k: Number of top individuals to keep for final output.
         surrogate: Whether to use surrogate predictor for speed.
     """
+
     population_size: int = 50
     tournament_size: int = 10
     mutation_rate: float = 0.3
@@ -141,14 +143,14 @@ class EvolutionSearch(SearchAlgorithm):
         **kwargs,
     ) -> Genotype:
         """Run evolutionary architecture search.
-        
+
         Args:
             train_data: Not used directly (evaluation is via evaluate_fn).
             evaluate_fn: Function that takes a Genotype and returns
                          validation accuracy. If None, uses a simple
                          random fitness (for testing/demo).
             **kwargs: Additional parameters.
-        
+
         Returns:
             Best discovered Genotype.
         """
@@ -190,10 +192,7 @@ class EvolutionSearch(SearchAlgorithm):
         # Sort by fitness descending
         self._population.sort(key=lambda x: x.fitness, reverse=True)
         best_fitness = self._population[0].fitness
-        logger.info(
-            f"Initial population ready. "
-            f"Best fitness: {best_fitness:.4f}"
-        )
+        logger.info(f"Initial population ready. " f"Best fitness: {best_fitness:.4f}")
 
         # Phase 2: Evolution cycles
         logger.info("Phase 2: Evolution...")
@@ -250,9 +249,9 @@ class EvolutionSearch(SearchAlgorithm):
             # Logging
             self._age_history.append(oldest.age)
             if (cycle + 1) % 20 == 0:
-                avg_fitness = sum(
-                    ind.fitness for ind in self._population
-                ) / len(self._population)
+                avg_fitness = sum(ind.fitness for ind in self._population) / len(
+                    self._population
+                )
                 logger.info(
                     f"Cycle {cycle + 1}: best={best_fitness:.4f}, "
                     f"avg={avg_fitness:.4f}, "
@@ -272,7 +271,7 @@ class EvolutionSearch(SearchAlgorithm):
 
     def _tournament_select(self) -> Individual:
         """Select an individual via tournament selection.
-        
+
         Samples `tournament_size` individuals uniformly from the
         population and returns the one with highest fitness.
         """
@@ -284,7 +283,7 @@ class EvolutionSearch(SearchAlgorithm):
 
     def _dummy_evaluate(self, genotype: Genotype) -> float:
         """Dummy evaluation for testing without a GPU.
-        
+
         Returns a simulated fitness based on genotype complexity.
         Real usage requires training the architecture.
         """

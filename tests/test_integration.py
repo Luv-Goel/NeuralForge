@@ -6,14 +6,12 @@ Tests end-to-end workflows with small, fast models.
 import pytest
 import torch
 
-from neuralforge.core.search_space import CellSearchSpace, SearchSpaceConfig
-from neuralforge.core.genotypes import random_genotype, build_network_from_genotype
+from neuralforge.core.genotypes import build_network_from_genotype, random_genotype
 from neuralforge.core.operations import PRIMITIVES
-from neuralforge.algorithms.random_search import RandomSearch
+from neuralforge.core.search_space import CellSearchSpace, SearchSpaceConfig
 from neuralforge.utils.profiling import profile_model
 from neuralforge.utils.visualization import (
     render_cell_graph,
-    _to_text,
 )
 
 
@@ -23,7 +21,10 @@ class TestIntegration:
         genotype = random_genotype(PRIMITIVES, nodes=4)
         try:
             net = build_network_from_genotype(
-                genotype, init_channels=16, num_classes=10, layers=6,
+                genotype,
+                init_channels=16,
+                num_classes=10,
+                layers=6,
             )
             assert net is not None
         except Exception as e:
@@ -50,7 +51,10 @@ class TestIntegration:
         """Profiling should work on a built network."""
         genotype = random_genotype(PRIMITIVES, nodes=4)
         net = build_network_from_genotype(
-            genotype, init_channels=16, num_classes=10, layers=6,
+            genotype,
+            init_channels=16,
+            num_classes=10,
+            layers=6,
         )
         net.eval()
         results = profile_model(net, (3, 32, 32), verbose=False)

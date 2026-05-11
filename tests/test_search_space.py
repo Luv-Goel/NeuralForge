@@ -2,7 +2,8 @@ import pytest
 import torch
 
 from neuralforge.core.search_space import (
-    SearchSpaceConfig, CellSearchSpace, SearchSpaceCNN,
+    SearchSpaceCNN,
+    SearchSpaceConfig,
 )
 
 
@@ -16,9 +17,7 @@ class TestSearchSpaceConfig:
         assert config.nodes == 4
 
     def test_custom_config(self):
-        config = SearchSpaceConfig(
-            init_channels=32, layers=12, nodes=6
-        )
+        config = SearchSpaceConfig(init_channels=32, layers=12, nodes=6)
         assert config.init_channels == 32
         assert config.layers == 12
         assert config.nodes == 6
@@ -62,7 +61,7 @@ class TestSearchSpaceCNN:
         net = SearchSpaceCNN(config)
         reduction_indices = []
         for i, cell in enumerate(net.cells):
-            if hasattr(cell, 'reduction') and cell.reduction:
+            if hasattr(cell, "reduction") and cell.reduction:
                 reduction_indices.append(i)
         # Should have reduction cells at positions 3 and 6 for 9-layer net
         assert 3 in reduction_indices or len(reduction_indices) > 0

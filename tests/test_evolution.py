@@ -3,18 +3,14 @@ Tests for the Evolution search algorithm.
 Tests individual operators and search initialization.
 """
 
-import pytest
-import torch
-
-from neuralforge.core.search_space import CellSearchSpace
-from neuralforge.core.genotypes import Genotype, random_genotype
-from neuralforge.core.operations import PRIMITIVES
 from neuralforge.algorithms.evolution import (
-    EvolutionSearch,
     EvolutionConfig,
+    EvolutionSearch,
     Individual,
 )
-from neuralforge.algorithms.base import SearchConfig
+from neuralforge.core.genotypes import Genotype, random_genotype
+from neuralforge.core.operations import PRIMITIVES
+from neuralforge.core.search_space import CellSearchSpace
 
 
 class TestIndividual:
@@ -59,14 +55,16 @@ class TestEvolutionConfig:
     def test_inherits_from_search_config(self):
         """EvolutionConfig should inherit SearchConfig fields."""
         config = EvolutionConfig()
-        assert hasattr(config, 'epochs')
-        assert hasattr(config, 'batch_size')
-        assert hasattr(config, 'device')
+        assert hasattr(config, "epochs")
+        assert hasattr(config, "batch_size")
+        assert hasattr(config, "device")
 
     def test_custom_config(self):
         """Custom values should override defaults."""
         config = EvolutionConfig(
-            population_size=20, cycles=50, mutation_rate=0.5,
+            population_size=20,
+            cycles=50,
+            mutation_rate=0.5,
         )
         assert config.population_size == 20
         assert config.cycles == 50
@@ -127,9 +125,7 @@ class TestEvolutionSearch:
         # Seed population manually
         for i in range(10):
             geno = random_genotype(PRIMITIVES, nodes=4)
-            algo._population.append(
-                Individual(genotype=geno, fitness=0.1 * i)
-            )
+            algo._population.append(Individual(genotype=geno, fitness=0.1 * i))
         selected = algo._tournament_select()
         assert selected.fitness >= 0  # should be one of the 10
 
@@ -141,9 +137,7 @@ class TestEvolutionSearch:
         # Seed population with varied fitness
         for i in range(10):
             geno = random_genotype(PRIMITIVES, nodes=4)
-            algo._population.append(
-                Individual(genotype=geno, fitness=0.1 * i)
-            )
+            algo._population.append(Individual(genotype=geno, fitness=0.1 * i))
         top = algo.top_k(3)
         assert len(top) == 3
         # Should be sorted descending
@@ -156,9 +150,7 @@ class TestEvolutionSearch:
         algo._population = []
         for i in range(5):
             geno = random_genotype(PRIMITIVES, nodes=4)
-            algo._population.append(
-                Individual(genotype=geno, fitness=float(i))
-            )
+            algo._population.append(Individual(genotype=geno, fitness=float(i)))
         pop = algo.population
         assert pop[0].fitness == 4.0
         assert pop[-1].fitness == 0.0

@@ -15,10 +15,10 @@ References:
     - AmoebaNet: Regularized Evolution (ICML 2019)
 """
 
+from typing import Optional
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional
 
 # ——— The primitive operations available during search ———
 # Each is (name, kernel_size) — the actual nn.Module is built by OPS dict
@@ -63,9 +63,7 @@ class ReLUConvBN(nn.Module):
         padding = padding or (kernel_size // 2)
         self.net = nn.Sequential(
             nn.ReLU(inplace=True),
-            nn.Conv2d(
-                c_in, c_out, kernel_size, stride, padding, bias=False
-            ),
+            nn.Conv2d(c_in, c_out, kernel_size, stride, padding, bias=False),
             nn.BatchNorm2d(c_out, affine=affine),
         )
 
@@ -91,15 +89,25 @@ class SepConv(nn.Module):
         self.net = nn.Sequential(
             nn.ReLU(inplace=True),
             nn.Conv2d(
-                c_in, c_in, kernel_size, stride, padding,
-                groups=c_in, bias=False,
+                c_in,
+                c_in,
+                kernel_size,
+                stride,
+                padding,
+                groups=c_in,
+                bias=False,
             ),
             nn.Conv2d(c_in, c_in, 1, 1, 0, bias=False),
             nn.BatchNorm2d(c_in, affine=affine),
             nn.ReLU(inplace=True),
             nn.Conv2d(
-                c_in, c_in, kernel_size, 1, padding,
-                groups=c_in, bias=False,
+                c_in,
+                c_in,
+                kernel_size,
+                1,
+                padding,
+                groups=c_in,
+                bias=False,
             ),
             nn.Conv2d(c_in, c_out, 1, 1, 0, bias=False),
             nn.BatchNorm2d(c_out, affine=affine),
@@ -128,8 +136,14 @@ class DilConv(nn.Module):
         self.net = nn.Sequential(
             nn.ReLU(inplace=True),
             nn.Conv2d(
-                c_in, c_in, kernel_size, stride, padding,
-                dilation=dilation, groups=c_in, bias=False,
+                c_in,
+                c_in,
+                kernel_size,
+                stride,
+                padding,
+                dilation=dilation,
+                groups=c_in,
+                bias=False,
             ),
             nn.Conv2d(c_in, c_out, 1, 1, 0, bias=False),
             nn.BatchNorm2d(c_out, affine=affine),
@@ -206,7 +220,7 @@ class Zero(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.stride > 1:
-            return x[:, :, ::self.stride, ::self.stride].mul(0.0)
+            return x[:, :, :: self.stride, :: self.stride].mul(0.0)
         return x.mul(0.0)
 
 
@@ -218,38 +232,77 @@ OPS = {
         Zero(stride) if c_in == c_out else nn.Sequential()
     ),
     "avg_pool_3x3": lambda c_in, c_out, stride, affine: nn.AvgPool2d(
-        3, stride=stride, padding=1, count_include_pad=False,
+        3,
+        stride=stride,
+        padding=1,
+        count_include_pad=False,
     ),
     "max_pool_3x3": lambda c_in, c_out, stride, affine: nn.MaxPool2d(
-        3, stride=stride, padding=1,
+        3,
+        stride=stride,
+        padding=1,
     ),
     "skip_connect": lambda c_in, c_out, stride, affine: (
         nn.Identity()
         if stride == 1 and c_in == c_out
-        else FactorizedReduce(c_in, c_out, affine=affine)
-        if stride == 2
-        else nn.Sequential(
-            nn.Conv2d(c_in, c_out, 1, stride, 0, bias=False),
-            nn.BatchNorm2d(c_out, affine=affine),
+        else (
+            FactorizedReduce(c_in, c_out, affine=affine)
+            if stride == 2
+            else nn.Sequential(
+                nn.Conv2d(c_in, c_out, 1, stride, 0, bias=False),
+                nn.BatchNorm2d(c_out, affine=affine),
+            )
         )
     ),
     "sep_conv_3x3": lambda c_in, c_out, stride, affine: SepConv(
-        c_in, c_out, 3, stride, 1, affine=affine,
+        c_in,
+        c_out,
+        3,
+        stride,
+        1,
+        affine=affine,
     ),
     "sep_conv_5x5": lambda c_in, c_out, stride, affine: SepConv(
-        c_in, c_out, 5, stride, 2, affine=affine,
+        c_in,
+        c_out,
+        5,
+        stride,
+        2,
+        affine=affine,
     ),
     "dil_conv_3x3": lambda c_in, c_out, stride, affine: DilConv(
-        c_in, c_out, 3, stride, 2, 2, affine=affine,
+        c_in,
+        c_out,
+        3,
+        stride,
+        2,
+        2,
+        affine=affine,
     ),
     "dil_conv_5x5": lambda c_in, c_out, stride, affine: DilConv(
-        c_in, c_out, 5, stride, 4, 2, affine=affine,
+        c_in,
+        c_out,
+        5,
+        stride,
+        4,
+        2,
+        affine=affine,
     ),
     "conv_1x1": lambda c_in, c_out, stride, affine: ReLUConvBN(
-        c_in, c_out, 1, stride, 0, affine=affine,
+        c_in,
+        c_out,
+        1,
+        stride,
+        0,
+        affine=affine,
     ),
     "conv_3x3": lambda c_in, c_out, stride, affine: ReLUConvBN(
-        c_in, c_out, 3, stride, 1, affine=affine,
+        c_in,
+        c_out,
+        3,
+        stride,
+        1,
+        affine=affine,
     ),
 }
 
@@ -262,21 +315,19 @@ def get_op(
     affine: bool = True,
 ) -> nn.Module:
     """Construct an operation module by name.
-    
+
     Args:
         op_name: One of the keys in OPS, or any PRIMITIVE name.
         c_in: Input channels.
         c_out: Output channels.
         stride: Convolution stride.
         affine: Whether BatchNorm affine params are trainable.
-    
+
     Returns:
         An nn.Module representing the operation.
     """
     if op_name not in OPS:
-        raise KeyError(
-            f"Unknown operation '{op_name}'. Available: {list(OPS.keys())}"
-        )
+        raise KeyError(f"Unknown operation '{op_name}'. Available: {list(OPS.keys())}")
     return OPS[op_name](c_in, c_out, stride, affine)
 
 
