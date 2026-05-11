@@ -24,19 +24,19 @@ References:
 """
 
 from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, List, Optional
+
 import torch
 import torch.nn as nn
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Dict, Any, Type
 
 from neuralforge.core.operations import (
     PRIMITIVES,
-    OPS,
-    get_op,
+    AuxiliaryHead,
     FactorizedReduce,
     ReLUConvBN,
     Stem,
-    AuxiliaryHead,
 )
 
 
@@ -56,6 +56,7 @@ class SearchSpaceConfig:
         drop_path_prob: Drop-path regularization probability.
         stem_multiplier: Channel multiplier for the stem.
     """
+
     c_in: int = 3
     init_channels: int = 16
     num_classes: int = 10
@@ -111,15 +112,16 @@ class Cell(nn.Module):
             for j in range(2 + i):
                 # Each edge: (node_j -> node_i)
                 stride = 2 if reduction and j < 2 else 1
-                op = FactorizedReduce(c_curr, c_curr) if (
-                    stride == 2 and j < 2 and reduction
-                ) else ReLUConvBN(c_curr, c_curr, 1, 1, 0)
+                op = (
+                    FactorizedReduce(c_curr, c_curr)
+                    if (stride == 2 and j < 2 and reduction)
+                    else ReLUConvBN(c_curr, c_curr, 1, 1, 0)
+                )
                 self._ops.append(op)
-
 
     def forward(self, s0, s1, weights=None):
         """Forward pass.
-        
+
         Args:
             s0: Output of cell at position -2
             s1: Output of cell at position -1
@@ -133,15 +135,17 @@ class Cell(nn.Module):
         offset = 0
         for i in range(self.steps):
             s = sum(
-                self._ops[offset + j](h) * weights[offset + j]
-                if weights is not None
-                else self._ops[offset + j](h)
+                (
+                    self._ops[offset + j](h) * weights[offset + j]
+                    if weights is not None
+                    else self._ops[offset + j](h)
+                )
                 for j, h in enumerate(states)
             )
             offset += len(states)
             states.append(s)
 
-        return torch.cat(states[-self.steps:], dim=1)
+        return torch.cat(states[-self.steps :], dim=1)
 
 
 class SearchSpaceCNN(nn.Module):
@@ -194,7 +198,8 @@ class SearchSpaceCNN(nn.Module):
             # Attach auxiliary head at 2/3 depth if enabled
             if config.auxiliary and i == 2 * config.layers // 3:
                 self.auxiliary_head = AuxiliaryHead(
-                    c_prev, config.num_classes,
+                    c_prev,
+                    config.num_classes,
                 )
 
         self.global_pooling = nn.AdaptiveAvgPool2d(1)
@@ -258,16 +263,17 @@ class CellSearchSpace:
         num_classes: Optional[int] = None,
     ) -> nn.Module:
         """Build a discrete network from a genotype.
-        
+
         Args:
             genotype: A Genotype object defining the architecture.
             init_channels: Override init_channels.
             num_classes: Override num_classes.
-        
+
         Returns:
             A nn.Module with the discrete architecture.
         """
         from neuralforge.core.genotypes import build_network_from_genotype
+
         return build_network_from_genotype(
             genotype,
             init_channels=init_channels or self.config.init_channels,

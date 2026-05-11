@@ -7,9 +7,16 @@ import torch
 import torch.nn as nn
 
 from neuralforge.core.operations import (
-    OPS, PRIMITIVES, get_op, ReLUConvBN, SepConv,
-    DilConv, FactorizedReduce, Stem, AuxiliaryHead,
-    Zero, count_parameters,
+    OPS,
+    PRIMITIVES,
+    AuxiliaryHead,
+    DilConv,
+    FactorizedReduce,
+    SepConv,
+    Stem,
+    Zero,
+    count_parameters,
+    get_op,
 )
 
 

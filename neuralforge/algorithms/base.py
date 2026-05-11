@@ -14,33 +14,29 @@ Subclasses implement `search()` which runs the core search logic.
 """
 
 from __future__ import annotations
+
 import abc
-import copy
 import json
-import os
-import time
 import logging
+import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import (
-    Optional, Callable, Dict, Any, List, Tuple, Union,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
 )
-from dataclasses import dataclass, field
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
 
 import numpy as np
-from tqdm import tqdm
+import torch
+from torch.utils.data import DataLoader, Dataset
 
-from neuralforge.core.search_space import (
-    SearchSpaceConfig,
-    CellSearchSpace,
-    SearchSpaceCNN,
-)
 from neuralforge.core.genotypes import Genotype
+from neuralforge.core.search_space import (
+    CellSearchSpace,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +69,7 @@ class SearchConfig:
         drop_path_prob: Drop-path probability.
         grad_clip: Max gradient norm.
     """
+
     epochs: int = 50
     batch_size: int = 64
     init_channels: int = 16
@@ -102,7 +99,7 @@ class SearchAlgorithm(abc.ABC):
 
     Subclasses must implement:
         - search() → runs the search and returns best Genotype
-        
+
     Override:
         - _initialize_search() → custom init logic
         - _search_step() → one step/epoch of search
@@ -158,11 +155,11 @@ class SearchAlgorithm(abc.ABC):
         **kwargs,
     ) -> Genotype:
         """Run architecture search.
-        
+
         Args:
             train_data: Training dataset. If None, loads CIFAR-10.
             **kwargs: Algorithm-specific parameters.
-        
+
         Returns:
             The best discovered genotype.
         """
@@ -179,7 +176,8 @@ class SearchAlgorithm(abc.ABC):
         n_train = int(n * self.config.train_portion)
         n_val = n - n_train
         train_data, val_data = torch.utils.data.random_split(
-            dataset, [n_train, n_val],
+            dataset,
+            [n_train, n_val],
             generator=torch.Generator().manual_seed(self.config.seed),
         )
         train_loader = DataLoader(
@@ -221,14 +219,16 @@ class SearchAlgorithm(abc.ABC):
         accuracy: float,
         phase: str = "train",
     ) -> None:
-        self._history.append({
-            "step": step,
-            "epoch": epoch,
-            "loss": loss,
-            "accuracy": accuracy,
-            "phase": phase,
-            "time": time.time() - self._start_time,
-        })
+        self._history.append(
+            {
+                "step": step,
+                "epoch": epoch,
+                "loss": loss,
+                "accuracy": accuracy,
+                "phase": phase,
+                "time": time.time() - self._start_time,
+            }
+        )
 
     @property
     def history(self) -> List[Dict[str, Any]]:
@@ -242,10 +242,10 @@ class SearchAlgorithm(abc.ABC):
 
     def export_results(self, path: Optional[str] = None) -> str:
         """Export search results to JSON.
-        
+
         Args:
             path: Output file path. If None, returns JSON string.
-        
+
         Returns:
             JSON string of results.
         """

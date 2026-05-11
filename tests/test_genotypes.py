@@ -1,9 +1,10 @@
-import pytest
 import json
 
 from neuralforge.core.genotypes import (
-    Genotype, random_genotype, mutate_genotype,
+    Genotype,
     crossover_genotypes,
+    mutate_genotype,
+    random_genotype,
 )
 from neuralforge.core.operations import PRIMITIVES
 
@@ -37,7 +38,9 @@ class TestRandomGenotype:
             g = random_genotype(PRIMITIVES, nodes=4)
             assert len(g.normal) > 0
             total_edges = sum(min(2, 2 + i) for i in range(4))
-            assert len(g.normal) == total_edges,                 f"Expected {total_edges} edges, got {len(g.normal)}"
+            assert (
+                len(g.normal) == total_edges
+            ), f"Expected {total_edges} edges, got {len(g.normal)}"
 
     def test_random_genotype_uses_valid_ops(self):
         for _ in range(20):

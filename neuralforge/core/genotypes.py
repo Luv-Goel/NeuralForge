@@ -23,23 +23,21 @@ References:
 """
 
 from __future__ import annotations
-import copy
+
 import json
 import random
-from dataclasses import dataclass, field, asdict
-from typing import List, Tuple, Optional, Dict, Any
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Tuple
 
 import torch
 import torch.nn as nn
 
 from neuralforge.core.operations import (
-    OPS,
-    PRIMITIVES,
-    get_op,
+    AuxiliaryHead,
     FactorizedReduce,
     ReLUConvBN,
     Stem,
-    AuxiliaryHead,
+    get_op,
 )
 
 
@@ -56,6 +54,7 @@ class Genotype:
         params: Parameter count (populated after profiling).
         flops: FLOP count (populated after profiling).
     """
+
     normal: List[Tuple[str, int]] = field(default_factory=list)
     normal_concat: List[int] = field(default_factory=lambda: [2, 3, 4, 5])
     reduce: List[Tuple[str, int]] = field(default_factory=list)
@@ -95,13 +94,15 @@ class Genotype:
 
     def to_compact_string(self) -> str:
         """Human-readable compact representation.
-        
+
         Example output:
             Normal: sep_conv_3x3->0, skip_connect->0, sep_conv_5x5->1, ...
             Reduce: max_pool_3x3->0, dil_conv_3x3->0, sep_conv_3x3->1, ...
         """
+
         def _fmt(ops):
             return ", ".join(f"{op}->{idx}" for op, idx in ops)
+
         return (
             f"Normal: {_fmt(self.normal)}\n"
             f"Reduce: {_fmt(self.reduce)}\n"
@@ -118,28 +119,30 @@ class Genotype:
 
 # ——— Genotype mutation operators (for evolutionary search) ———
 
+
 def mutate_genotype(
     genotype: Genotype,
     primitive_set: List[str],
     mutation_rate: float = 0.3,
 ) -> Genotype:
     """Mutate a genotype by randomly changing operations.
-    
+
     Each edge's operation has `mutation_rate` chance of being replaced
     by a random different operation. The DAG structure (which nodes
     connect where) is preserved — only the operation type changes.
-    
+
     This is the 'structural mutation' used in Regularized Evolution
     (AmoebaNet, Real et al., 2019).
-    
+
     Args:
         genotype: The parent genotype.
         primitive_set: Available operations.
         mutation_rate: Per-edge mutation probability.
-    
+
     Returns:
         A new Genotype with mutations applied.
     """
+
     def _mutate_edges(edges: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
         new_edges = []
         for op_name, node_idx in edges:
@@ -167,20 +170,18 @@ def crossover_genotypes(
     parent_b: Genotype,
 ) -> Genotype:
     """One-point crossover between two genotypes.
-    
+
     Each edge is independently inherited from one of the two parents
     with equal probability. This preserves the DAG structure while
     mixing operation choices.
     """
+
     def _crossover_edges(
         edges_a: List[Tuple[str, int]],
         edges_b: List[Tuple[str, int]],
     ) -> List[Tuple[str, int]]:
         assert len(edges_a) == len(edges_b)
-        return [
-            random.choice([a, b])
-            for a, b in zip(edges_a, edges_b)
-        ]
+        return [random.choice([a, b]) for a, b in zip(edges_a, edges_b)]
 
     return Genotype(
         normal=_crossover_edges(parent_a.normal, parent_b.normal),
@@ -195,7 +196,7 @@ def random_genotype(
     nodes: int = 4,
 ) -> Genotype:
     """Generate a random genotype for the given search space.
-    
+
     Each intermediate node connects to exactly 2 previous nodes
     (uniformly sampled), each with a random operation.
     This produces valid architectures in the DARTS search space.
@@ -230,6 +231,7 @@ def _sample_edges(
 
 # ——— Discrete network construction ———
 
+
 class DiscreteCell(nn.Module):
     """A cell with discrete operations determined by a genotype."""
 
@@ -254,57 +256,16 @@ class DiscreteCell(nn.Module):
             self.preprocess0 = ReLUConvBN(c_prev_prev, c_curr, 1, 1, 0)
         self.preprocess1 = ReLUConvBN(c_prev, c_curr, 1, 1, 0)
 
-        # Build discrete operations
-        self._ops = nn.ModuleList()
-        self._out_nodes = set()
-
-        # Group edges by their target node
-        edge_map: Dict[int, List[Tuple[str, int]]] = {}
-        for op_name, from_node in cell_edges:
-            # Figure out which intermediate node this targets
-            # In DARTS encoding, edges are in order: all edges targeting
-            # node 2, then node 3, etc. We reconstruct this.
-            edge_map.setdefault(from_node, []).append((op_name, from_node))
-
-        # Actually, DARTS genotype format is flat: edges are ordered by
-        # target node (node 2's edges first, then node 3's, etc.)
-        # We need to decode it differently.
-
-        # Count edges per node to figure out targets
-        edges_per_target = [2] * (len(concat_indices))  # 2 edges per intermediate node
-        target_sizes = []
-        for i in range(len(concat_indices)):
-            for j in range(2 + i):
-                target_sizes.append(i + 2)  # target node index
-
-        # Build ops: each edge connects from_node to its target
-        self._edge_info = []
-        for idx, (op_name, from_node) in enumerate(cell_edges):
-            target_node = 2 + idx // 2  # floor division gives target index
-            if idx >= 2:
-                target_node = 2 + idx // 2
-            # Actually let me rethink this...
-            # In NASNet/DARTS: edges are ordered as (node2-edge1, node2-edge2, node3-edge1, node3-edge2, ...)
-            pass
-
-        # Hmm, the DARTS genotype format is a bit tricky. Let me simplify.
-        # I'll just look at known genotypes.
-
-        self._use_known_structure = True
-        self._ops_list = nn.ModuleList()
-        self._from_nodes = []
-
-        # DARTS format: flat list of (op, from_node) pairs.
-        # Edges targeting node N come before edges targeting node N+1.
-        # Each node gets exactly 2 edges.
-
-        start_idx = 0
+        # Build discrete operations from genotype edges
+        # DARTS format: flat list of (op, from_node) pairs ordered by target node
         self._node_ops = nn.ModuleList()
         self._node_inputs = []
 
+        start_idx = 0
         for node_idx in range(len(concat_indices)):
-            target = node_idx + 2  # Nodes are 0-indexed (0=s0, 1=s1, 2..N+1=intermediate)
-            k = min(2, target)  # This node connects to k predecessors
+            k = min(
+                2, node_idx + 2
+            )  # each intermediate node connects to k predecessors
             node_ops = nn.ModuleList()
             node_from = []
             for e_idx in range(k):
@@ -316,14 +277,11 @@ class DiscreteCell(nn.Module):
                     op = get_op(op_name, c_curr, c_curr, stride, affine=True)
                     node_ops.append(op)
                 else:
-                    # Fallback for incomplete genotypes
-                    node_from.append(0)
+                    node_from.append(from_idx if global_idx < len(cell_edges) else 0)
                     node_ops.append(nn.Identity())
             self._node_ops.append(node_ops)
             self._node_inputs.append(node_from)
             start_idx += k
-
-        self._concat_indices = concat_indices
 
     def forward(self, s0, s1):
         s0 = self.preprocess0(s0)
@@ -426,7 +384,7 @@ def build_network_from_genotype(
     drop_path_prob: float = 0.0,
 ) -> DiscreteNetwork:
     """Build a full CNN from a Genotype.
-    
+
     This is the main entry point for constructing a discrete
     architecture after search completes.
     """

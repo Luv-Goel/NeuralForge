@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: NeuralForge Documentation
+    url: https://github.com/Luv-Goel/NeuralForge/docs
+    about: Check the docs before opening an issue
+  - name: GitHub Discussions
+    url: https://github.com/Luv-Goel/NeuralForge/discussions
+    about: Please ask questions and discuss ideas here

@@ -18,13 +18,14 @@ References:
 """
 
 from __future__ import annotations
-import logging
-from typing import Dict, Tuple, Optional, List, Any
-from functools import partial
 
+import logging
+from functools import partial
+from typing import Any, Dict, Tuple
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ _profile_cache: Dict[str, Dict[str, float]] = {}
 
 def count_parameters(model: nn.Module) -> Dict[str, int]:
     """Count trainable and total parameters.
-    
+
     Returns:
         dict with 'trainable' and 'total' parameter counts.
     """
@@ -45,26 +46,26 @@ def count_parameters(model: nn.Module) -> Dict[str, int]:
 
 def count_macs(model: nn.Module, input_size: Tuple[int, ...]) -> int:
     """Count MACs (multiply-accumulate operations) for a forward pass.
-    
+
     Uses a simple profile hook approach. For production use, consider
     fvcore which has more comprehensive operation coverage.
-    
+
     Args:
         model: PyTorch model.
         input_size: Input tensor shape (C, H, W) or (B, C, H, W).
-    
+
     Returns:
         Total MAC count.
     """
     if len(input_size) == 3:
         input_size = (1, *input_size)
-    
+
     model = model.cpu()
     model.eval()
-    
+
     hooks = []
     macs_per_layer = {}
-    
+
     def _hook_fn(name, module, input, output):
         """Count MACs for supported modules."""
         if isinstance(module, nn.Conv2d):
@@ -72,28 +73,28 @@ def count_macs(model: nn.Module, input_size: Tuple[int, ...]) -> int:
             k_h, k_w = module.kernel_size
             out_h = (h + 2 * module.padding[0] - k_h) // module.stride[0] + 1
             out_w = (w + 2 * module.padding[1] - k_w) // module.stride[1] + 1
-            macs = n * out_h * out_w * c * k_h * k_w * module.out_channels // module.groups
+            macs = (
+                n * out_h * out_w * c * k_h * k_w * module.out_channels // module.groups
+            )
             macs_per_layer[name] = macs
-        
+
         elif isinstance(module, nn.Linear):
             macs = input[0].shape[0] * input[0].shape[1] * module.out_features
             macs_per_layer[name] = macs
-        
+
         elif isinstance(module, nn.AvgPool2d) or isinstance(module, nn.MaxPool2d):
             # Pooling ops — cheap, approximate
             macs_per_layer[name] = 0
-        
+
         else:
             # Unknown module — skip (conservative estimate)
             macs_per_layer[name] = 0
-    
+
     # Register hooks
     for name, module in model.named_modules():
         if isinstance(module, (nn.Conv2d, nn.Linear, nn.AvgPool2d, nn.MaxPool2d)):
-            hooks.append(
-                module.register_forward_hook(partial(_hook_fn, name))
-            )
-    
+            hooks.append(module.register_forward_hook(partial(_hook_fn, name)))
+
     # Run forward pass
     try:
         dummy = torch.randn(input_size)
@@ -104,22 +105,22 @@ def count_macs(model: nn.Module, input_size: Tuple[int, ...]) -> int:
         for h in hooks:
             h.remove()
         return 0
-    
+
     # Clean up hooks
     for h in hooks:
         h.remove()
-    
+
     total_macs = sum(macs_per_layer.values())
     return int(total_macs)
 
 
 def count_flops(model: nn.Module, input_size: Tuple[int, ...]) -> int:
     """Count FLOPs — approximately 2x MACs (multiply + add).
-    
+
     Args:
         model: PyTorch model.
         input_size: Input tensor shape.
-    
+
     Returns:
         Total FLOP count.
     """
@@ -133,27 +134,31 @@ def estimate_memory(
     dtype: torch.dtype = torch.float32,
 ) -> Dict[str, float]:
     """Estimate memory usage (in MB) for forward + backward pass.
-    
+
     Returns:
         dict with 'params_mb', 'activations_mb', 'total_mb'.
     """
     bytes_per_elem = torch.tensor([], dtype=dtype).element_size()
-    
+
     # Parameter memory
-    params_mb = sum(
-        p.numel() * bytes_per_elem for p in model.parameters()
-    ) / (1024 * 1024)
-    
+    params_mb = sum(p.numel() * bytes_per_elem for p in model.parameters()) / (
+        1024 * 1024
+    )
+
     # Activation memory — rough estimate based on largest feature map
     # For CNN: activation size ~ batch_size * channels * H * W * bytes
     if len(input_size) == 3:
         input_size = (1, *input_size)
     activation_elems = np.prod(input_size)
-    
+
     # Rough multiplier for intermediate activations (depends on depth)
-    depth_factor = sum(1 for _ in model.modules() if isinstance(_, (nn.Conv2d, nn.Linear)))
-    activation_mb = activation_elems * bytes_per_elem * min(depth_factor, 20) / (1024 * 1024)
-    
+    depth_factor = sum(
+        1 for _ in model.modules() if isinstance(_, (nn.Conv2d, nn.Linear))
+    )
+    activation_mb = (
+        activation_elems * bytes_per_elem * min(depth_factor, 20) / (1024 * 1024)
+    )
+
     return {
         "params_mb": round(params_mb, 2),
         "activations_mb": round(activation_mb, 2),
@@ -167,12 +172,12 @@ def profile_model(
     verbose: bool = True,
 ) -> Dict[str, Any]:
     """Comprehensive model profiling — params, FLOPs, MACs, memory.
-    
+
     Args:
         model: PyTorch model to profile.
         input_size: Input tensor shape (C, H, W) or (B, C, H, W).
         verbose: Whether to log results.
-    
+
     Returns:
         Dictionary with all profiling results.
     """
@@ -180,12 +185,12 @@ def profile_model(
     model_id = str(id(model))
     if model_id in _profile_cache:
         return _profile_cache[model_id]
-    
+
     params = count_parameters(model)
     macs = count_macs(model, input_size)
     flops = count_flops(model, input_size)
     memory = estimate_memory(model, input_size)
-    
+
     def _format(n):
         if n >= 1e9:
             return f"{n / 1e9:.2f}G"
@@ -194,7 +199,7 @@ def profile_model(
         elif n >= 1e3:
             return f"{n / 1e3:.2f}K"
         return str(n)
-    
+
     results = {
         "params_total": params["total"],
         "params_trainable": params["trainable"],
@@ -206,7 +211,7 @@ def profile_model(
         "memory_mb": memory,
         "input_size": input_size,
     }
-    
+
     if verbose:
         msg = (
             "Model Profile:\n"
@@ -219,7 +224,7 @@ def profile_model(
             f"activations approx {memory['activations_mb']}MB)"
         )
         logger.info(msg)
-    
+
     _profile_cache[model_id] = results
     return results
 
@@ -228,10 +233,10 @@ def compare_architectures(
     models: Dict[str, Tuple[nn.Module, Tuple[int, ...]]],
 ) -> Dict[str, Dict[str, Any]]:
     """Profile and compare multiple architectures side-by-side.
-    
+
     Args:
         models: Dict mapping name -> (model, input_size) pairs.
-    
+
     Returns:
         Dict mapping name -> profiling results.
     """

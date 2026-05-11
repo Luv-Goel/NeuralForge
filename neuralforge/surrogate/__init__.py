@@ -1,1 +1,5 @@
-from neuralforge.surrogate.predictor import SurrogatePredictor, MLPPredictor, GaussianProcessPredictor
+from neuralforge.surrogate.predictor import (  # noqa: F401
+    GaussianProcessPredictor,
+    MLPPredictor,
+    SurrogatePredictor,
+)
