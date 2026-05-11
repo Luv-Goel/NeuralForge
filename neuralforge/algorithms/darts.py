@@ -317,7 +317,7 @@ class DARTSSearch(SearchAlgorithm):
         unrolled: bool = False,
     ):
         super().__init__(search_space, config)
-        self._unrolled = unrolled or config.unrolled
+        self._unrolled = unrolled or self.config.unrolled
 
         # Override config for DARTS-specific defaults if not user-set
         if not config:
