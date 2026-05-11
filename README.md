@@ -305,7 +305,7 @@ If you use NeuralForge in your research, please cite:
 @misc{goel2024neuralforge,
   author = {Goel, Luv},
   title = {NeuralForge: A Neural Architecture Search & Model Optimization Framework},
-  year = {2024},
+  year = {2026},
   publisher = {GitHub},
   url = {https://github.com/Luv-Goel/NeuralForge}
 }
