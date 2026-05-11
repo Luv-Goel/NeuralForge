@@ -208,20 +208,17 @@ def profile_model(
     }
     
     if verbose:
-        logger.info(
-            f"Model Profile:
-"
+        msg = (
+            "Model Profile:\n"
             f"  Parameters: {results['params_total_str']} "
-            f"({results['params_trainable']:,} trainable)
-"
-            f"  MACs: {results['macs_str']}
-"
-            f"  FLOPs: {results['flops_str']}
-"
+            f"({results['params_trainable']:,} trainable)\n"
+            f"  MACs: {results['macs_str']}\n"
+            f"  FLOPs: {results['flops_str']}\n"
             f"  Memory: {memory['total_mb']}MB "
             f"(params={memory['params_mb']}MB, "
-            f"activations≈{memory['activations_mb']}MB)"
+            f"activations approx {memory['activations_mb']}MB)"
         )
+        logger.info(msg)
     
     _profile_cache[model_id] = results
     return results

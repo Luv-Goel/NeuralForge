@@ -114,9 +114,8 @@ class Cell(nn.Module):
                 op = FactorizedReduce(c_curr, c_curr) if (
                     stride == 2 and j < 2 and reduction
                 ) else ReLUConvBN(c_curr, c_curr, 1, 1, 0)
-                # We'll handle the actual operations externally
-                # This is a placeholder — real operations are set during search
-                self._ops.append(nn.Identity())
+                self._ops.append(op)
+
 
     def forward(self, s0, s1, weights=None):
         """Forward pass.
@@ -169,6 +168,7 @@ class SearchSpaceCNN(nn.Module):
         self._auxiliary_weight = config.auxiliary_weight
 
         reduction_prev = False
+        self.cells = nn.ModuleList()
         for i in range(config.layers):
             # Reduction cells at 1/3 and 2/3 of the network depth
             if i in [config.layers // 3, 2 * config.layers // 3]:

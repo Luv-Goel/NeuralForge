@@ -360,22 +360,19 @@ def _to_text(genotype: Genotype) -> str:
     lines = ["Cell Architecture (DARTS format):", "─" * 50]
     
     for cell_type, edges in [("Normal", genotype.normal), ("Reduce", genotype.reduce)]:
-        lines.append(f"
-{cell_type} Cell:")
+        lines.append(f"\n{cell_type} Cell:")
         for i, (op, from_idx) in enumerate(edges):
             target = 2 + i // 2  # DARTS convention
-            lines.append(f"  [{target}] ← {op:18s} ← [{from_idx}]")
-    
+            lines.append(f"  [{target}] <- {op:18s} <- [{from_idx}]")
+
     if genotype.accuracy:
-        lines.append(f"
-Accuracy: {genotype.accuracy:.4f}")
+        lines.append(f"\nAccuracy: {genotype.accuracy:.4f}")
     if genotype.params:
-        lines.append(f"Params: {genotype.params:.1f}M")
+        lines.append(f"\nParams: {genotype.params:.1f}M")
     if genotype.flops:
-        lines.append(f"FLOPs: {genotype.flops:.1f}M")
-    
-    return "
-".join(lines)
+        lines.append(f"\nFLOPs: {genotype.flops:.1f}M")
+
+    return "\n".join(lines)
 
 
 def _to_dot(genotype: Genotype) -> str:
@@ -396,5 +393,4 @@ def _to_dot(genotype: Genotype) -> str:
         )
     
     lines.append("}")
-    return "
-".join(lines)
+    return "\n".join(lines)

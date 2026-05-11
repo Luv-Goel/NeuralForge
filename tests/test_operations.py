@@ -81,7 +81,7 @@ class TestOperations:
     def test_auxiliary_head(self):
         """Auxiliary head should produce correct logits."""
         aux = AuxiliaryHead(64, 10)
-        x = torch.randn(2, 64, 16, 16)
+        x = torch.randn(2, 64, 8, 8)
         out = aux(x)
         assert out.shape == (2, 10), f"Got {out.shape}"
 

@@ -176,7 +176,7 @@ class AuxiliaryHead(nn.Module):
     (used in DARTS to add a loss at the 2/3 point of the network).
     Helps gradient flow in deep architectures during search."""
 
-    def __init__(self, c_in: int, num_classes: int, stride: int = 4):
+    def __init__(self, c_in: int, num_classes: int, stride: int = 3):
         super().__init__()
         self.features = nn.Sequential(
             nn.ReLU(inplace=True),

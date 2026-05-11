@@ -1,4 +1,4 @@
-from neuralforge.utils.profiling import ModelProfiler, profile_model
+from neuralforge.utils.profiling import profile_model
 from neuralforge.utils.visualization import (
     plot_architecture,
     plot_search_trajectory,
