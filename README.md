@@ -293,6 +293,8 @@ Areas we'd love help with:
 - Performance optimizations
 - Documentation improvements
 
+Feel free to open an issue or pull request if you have any suggestions or bug reports!
+
 ## 📄 License
 
 This project is **MIT** licensed. See [LICENSE](LICENSE) for details.
@@ -318,3 +320,4 @@ If you use NeuralForge in your research, please cite:
   <a href="https://github.com/Luv-Goel/NeuralForge/issues">Report Bug</a> •
   <a href="https://github.com/Luv-Goel/NeuralForge/discussions">Discussions</a>
 </p>
+

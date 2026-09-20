@@ -117,10 +117,10 @@ class DARTSNetwork(nn.Module):
         # Architecture parameters (alphas) for normal and reduction cells
         k = sum(1 for i in range(nodes) for _ in range(2 + i))
         self.alphas_normal = ArchitectureParameter(
-            1e-3 * torch.randn(k, self._num_ops).cuda()
+            1e-3 * torch.randn(k, self._num_ops)
         )
         self.alphas_reduce = ArchitectureParameter(
-            1e-3 * torch.randn(k, self._num_ops).cuda()
+            1e-3 * torch.randn(k, self._num_ops)
         )
 
         # Alias for easier access
